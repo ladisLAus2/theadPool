@@ -25,7 +25,7 @@ public class Main {
 //
 //        long delay2 = 30000L;
 //        timer2.schedule(t2,delay2);
-
+        int a = 0;
         for (int i = 0; i < 10000; i++) {
             int time = 5 + (int) (Math.random() * ((12 - 5) + 5));
             //int time = new Random().nextInt(100,200);
