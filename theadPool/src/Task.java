@@ -17,10 +17,9 @@ public class Task implements Runnable {
 
     @Override
     public void run() {
-        try {
-            Thread.sleep(getNumber() * 1000);
-        } catch (InterruptedException e) {
-            System.out.println("The task " + number + " could not be executed");
-        }
+
+    }
+    public String toString(){
+        return "task " + this.number + " execution time " + executionTime + "\n";
     }
 }

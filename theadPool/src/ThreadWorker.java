@@ -5,7 +5,6 @@ public class ThreadWorker extends Thread {
 
     private static boolean running = true;
     private static boolean paused = false;
-    public static boolean interrupted = false;
     private static Object pauseObject = new Object();
     Thread thread;
     public ThreadWorker(BlockingQueue queue) {
@@ -19,8 +18,6 @@ public class ThreadWorker extends Thread {
         resumePool();
     }
     public void stopPoolImmediately(){
-        System.out.println("was interrupted");
-        System.out.println(thread.getName());
         thread.interrupt();
     }
     public static void resumePool(){
@@ -34,8 +31,8 @@ public class ThreadWorker extends Thread {
         thread = currentThread();
         Task task;
         while (running) {
-            if(currentThread().isInterrupted()){
-                System.out.println("interrupted");
+            if(thread.isInterrupted()){
+                System.out.println(thread.getName() + " was interrupted");
             }
             synchronized (pauseObject){
                 if(!running){
@@ -43,6 +40,7 @@ public class ThreadWorker extends Thread {
                 }
                 if(paused){
                     try{
+                        System.out.println(thread.getName() + " waiting");
                         pauseObject.wait();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
@@ -52,31 +50,49 @@ public class ThreadWorker extends Thread {
                     }
                 }
             }
+
             synchronized (queue) {
                 while (queue.isEmpty()) {
+                    if (queue.getIsBlocked())
+                        break;
+                    if (!running) {
+                        break;
+                    }
                     try {
+                        System.out.println(thread.getName() + " waits");
                         queue.wait();
                     } catch (Exception e) {
+                        if (queue.getIsBlocked() && queue.isEmpty()) {
+                            System.out.println("threadpool was stopped and is empty");
+                            System.out.println(thread.getName() + " out");
+                            return;
+                        }
                         System.out.println("error while waiting");
                     }
                 }
             }
-            try {
-                task = (Task) queue.take();
                 try {
-                    try {
-                        Thread.sleep(task.getNumber() * 1000);
-                    }catch (InterruptedException e){
-                        System.out.println("thread " + currentThread().getName() + " was interrupted" );
-                        return;
+                    if (queue.isEmpty() && queue.getIsBlocked())
+                        break;
+                    synchronized (queue) {
+                        task = (Task) queue.take();
                     }
-                    System.out.println("TASK " + task.getNumber() + " WAS executed by " + currentThread().getName() + " with time " + task.getExecutionTime() + " and execution time is " + queue.getTimeOfExecutionQueue());
+                    try {
+                        try {
+                            Thread.sleep(task.getNumber() * 1000);
+                        } catch (InterruptedException e) {
+                            System.out.println("thread " + currentThread().getName() + " was interrupted");
+                            return;
+                        }
+                        System.out.println("TASK " + task.getNumber() + " WAS executed by " + currentThread().getName() + " with time " + task.getExecutionTime() + " and execution time is " + queue.getTimeOfExecutionQueue());
+                    } catch (Exception e) {
+                        System.out.println("Error trying to execute task " + task.getNumber());
+                    }
                 } catch (Exception e) {
-                    System.out.println("Error trying to execute task " + task.getNumber());
+                    System.out.println("Error trying to take task");
                 }
-            } catch (Exception e) {
-                System.out.println("Error trying to take task");
-            }
+
         }
+        System.out.println(thread.getName() + " out");
     }
 }

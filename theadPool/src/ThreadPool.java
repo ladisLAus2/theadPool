@@ -1,8 +1,8 @@
-import java.util.concurrent.LinkedBlockingQueue;
 public class ThreadPool {
     private int numThreads;
     private ThreadWorker[] threadWorkers;
     private BlockingQueue blockingQueue;
+    private boolean isStoppedGradually = false;
 
     public ThreadPool(int numberThreads) {
         this.numThreads = numberThreads;
@@ -21,12 +21,30 @@ public class ThreadPool {
             blockingQueue.notifyAll();
         }
     }
-    public void stop(){
+    public synchronized void stopImmediately(){
+        System.out.println("ThreadPool is being stopped");
+        blockingQueue.setBlocked(true);
+        blockingQueue.printAll();
+        blockingQueue.setEmptyQueue();
         for(int i = 0; i < numThreads; i++){
             threadWorkers[i].stopPoolImmediately();
-            System.out.println(threadWorkers[i].isInterrupted());
         }
     }
-
-
+    public synchronized void stopGradually(){
+        System.out.println("ThreadPool is being stopped gradually");
+        blockingQueue.printAll();
+        blockingQueue.setBlocked(true);
+    }
+    public synchronized void pause(){
+        System.out.println("paused");
+        blockingQueue.setBlocked(true);
+        blockingQueue.printAll();
+        ThreadWorker.pausePool();
+    }
+    public synchronized void unpause(){
+        System.out.println("unpaused");
+        blockingQueue.printAll();
+        blockingQueue.setBlocked(false);
+        ThreadWorker.resumePool();
+    }
 }
